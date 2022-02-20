@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:planb/screens/geolocation.dart';
+import 'package:planb/screens/welcome.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +21,7 @@ class MyApp extends StatelessWidget {
       ),
 
       
-      home: geolocationPage()
+      home: WelcomeScreen()
     );
   }
 }
