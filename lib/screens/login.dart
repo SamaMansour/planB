@@ -2,208 +2,166 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'signup.dart';
+
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
+
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({ Key? key }) : super(key: key);
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  int _success = 1;
+  String _userEmail = "";
 
-   String? email;
-  bool logged = false;
+  void _singIn() async {
+    final User? user = (await _auth.signInWithEmailAndPassword(
+            email: _emailController.text, password: _passwordController.text))
+        .user;
 
-  String password = " ";
-  String alertText = " ";
-
-  final _firestore = FirebaseFirestore.instance;
-  final _auth = FirebaseAuth.instance;
-  bool val = false;
-  late String _myFromLocationsResult = " ";
-  late String _myToLocationsResult = " ";
-
-  late List<String> _myFromLocations = [];
-  late List<String> _myToLocations = [];
-
-  bool isValidEmail(value) {
-    final emailRegExp = RegExp(r"^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z]+");
-    return emailRegExp.hasMatch(value);
+    if (user != null) {
+      setState(() {
+        _success = 2;
+        _userEmail = user.email!;
+      });
+    } else {
+      setState(() {
+        _success = 3;
+      });
+    }
   }
-
-  //Password Validation
-
-  bool isValidPassword(value) {
-    final passwordRegExp = new RegExp(
-        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$');
-    return passwordRegExp.hasMatch(value);
-  }
-
-  final _formKey = GlobalKey<FormState>();
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-      child: SafeArea(
-        child: Container(
-          padding: EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _imageContainer(),
-               
-                _emailTFTextField(),
-               
-                _passwordTextField(),
-               
-                _forgotPassword(),
-                _alertText(),
-                _submitButton(),
-              ],
-            ),
+    return new Scaffold(
+        body: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          child: Stack(
+            children: <Widget>[
+              Container(
+                padding: EdgeInsets.fromLTRB(15, 110, 0, 0),
+                child: Text("Signin",
+                    style:
+                        TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
+              )
+            ],
           ),
         ),
-      ),
-    ));
-  }
-
-  Widget _imageContainer() {
-    return Container(
-      height: 200.0,
-      child: Image.asset('assets/logo.png'),
-    );
-  }
-
- 
-
-  Widget _emailTFTextField() {
-    return TextFormField(
-      textAlign: TextAlign.center,
-      validator: (v) {
-        if (isValidEmail(v)) {
-          email = v!;
-          return null;
-        } else {
-          return 'Please enter a valid email ';
-        }
-      },
-      decoration: InputDecoration(
-        hintText: 'Enter Email',
-        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.purple, width: 1.0),
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.purple, width: 2.0),
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-      ),
-    );
-  }
-
- 
-
-  Widget _passwordTextField() {
-    return TextFormField(
-      textAlign: TextAlign.center,
-      obscureText: true,
-      validator: (v) {
-        password = v!;
-      },
-      decoration: InputDecoration(
-        hintText: 'Enter Password',
-        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red, width: 1.0),
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.red, width: 2.0),
-          borderRadius: BorderRadius.all(Radius.circular(32.0)),
-        ),
-      ),
-    );
-  }
-
- 
-  Widget _forgotPassword() {
-    return TextButton(
-        onPressed: () {
-          // Navigator.of(context).pushReplacement(
-          //     MaterialPageRoute(builder: (context) => ForgotPassword()));
-        },
-        child: Text('Forgot Password?'));
-  }
-
-  Widget _alertText() {
-    return Text(alertText);
-  }
-
-  Widget _submitButton() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.0),
-      child: Material(
-        color: Colors.red,
-        borderRadius: BorderRadius.all(Radius.circular(30.0)),
-        elevation: 5.0,
-        child: MaterialButton(
-          minWidth: 400.0,
-          height: 42.0,
-          child: Text('Login'),
-          onPressed: () async {
-            if (_formKey.currentState!.validate()) {
-              final user = _auth
-                  .signInWithEmailAndPassword(
-                      email: email.toString(), password: password)
-                  .catchError((err) {
-                showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: Text("Wrong email or password"),
-                        content: Text(err.message),
-                        actions: [
-                          FlatButton(
-                            child: Text("Ok"),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          )
-                        ],
+        Container(
+          padding: EdgeInsets.only(top: 35, left: 20, right: 30),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                    labelText: 'EMAIL',
+                    labelStyle: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    )),
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                    labelText: 'PASSWORD',
+                    labelStyle: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.green),
+                    )),
+                obscureText: true,
+              ),
+              SizedBox(
+                height: 5.0,
+              ),
+              Container(
+                alignment: Alignment(1, 0),
+                padding: EdgeInsets.only(top: 15, left: 20),
+                child: InkWell(
+                  child: Text(
+                    'Forgot Password',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Montserrat',
+                        decoration: TextDecoration.underline),
+                  ),
+                ),
+              ),
+              Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    _success == 1
+                        ? ''
+                        : (_success == 2
+                            ? 'Successfully signed in ' + _userEmail
+                            : 'Sign in failed'),
+                    style: TextStyle(color: Colors.red),
+                  )),
+              SizedBox(
+                height: 40,
+              ),
+              Container(
+                height: 40,
+                child: Material(
+                  borderRadius: BorderRadius.circular(20),
+                  shadowColor: Colors.greenAccent,
+                  color: Colors.black,
+                  elevation: 7,
+                  child: GestureDetector(
+                      onTap: () async {
+                        _singIn();
+                      },
+                      child: Center(
+                          child: Text('LOGIN',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Montserrat')))),
+                ),
+              ),
+              SizedBox(
+                height: 15,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignupScreen()),
                       );
-                    });
-              });
-              final result = _auth.currentUser;
-
-             
-
-              //Navigate Users To their Page
-
-              /*await for (var snapshot
-                        in _firestore.collection('users').snapshots()) {
-                      for (var savedUser in snapshot.docs) {
-                       
-                         
-                        
-                      }
-                    }*/
-
-            }
-          },
-        ),
-      ),
-      
-    );
+                    },
+                    child: Text('Register',
+                        style: TextStyle(
+                            color: Colors.blueGrey,
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline)),
+                  )
+                ],
+              )
+            ],
+          ),
+        )
+      ],
+    ));
   }
 }
